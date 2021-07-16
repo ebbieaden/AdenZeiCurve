@@ -8,8 +8,9 @@ use ruc::{err::*, *};
 use serde::ser::Serializer;
 use utils::errors::ZeiError;
 use utils::serialization::ZeiFromToBytes;
+use itertools::Itertools;
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 struct BigNum(BigUint); //wrapper that enables to implement serialize and deserialize for BigUint
 
 impl ZeiFromToBytes for BigNum {
@@ -24,7 +25,7 @@ impl ZeiFromToBytes for BigNum {
 
 serialize_deserialize!(BigNum);
 
-#[derive(Debug, Deserialize, Serialize, PartialEq, Clone, Eq)]
+#[derive(Debug, Deserialize, Serialize, Eq, PartialEq, Clone)]
 pub struct Proof<G1, G2> {
     com_v1: G1,
     com_v2: G1,
