@@ -807,6 +807,11 @@ pub(crate) mod tests {
         let mut prng = ChaChaRng::from_seed([0u8; 32]);
         let (_, pub_key) =
             crypto::basics::elgamal::elgamal_key_gen::<_, JubjubPoint>(&mut prng, &base);
+        
+        //This for encrypt using another key
+        let (_, pub_key_prime) =
+            crypto::basics::elgamal::elgamal_key_gen::<_, JubjubPoint>(&mut prng, &base);
+
         let pk_point = pub_key.get_point();
         let pk_var = cs.new_point_variable(Point::from(&pk_point));
         let mut data_vars = vec![];
@@ -821,6 +826,9 @@ pub(crate) mod tests {
         // encrypt
         let ctxts =
             crypto::basics::elgamal::elgamal_hybrid_encrypt(&base, &pub_key, &r, &data);
+        let ctxts_prime =
+            crypto::basics::elgamal::elgamal_hybrid_encrypt(&base, &pub_key_prime, &r, &data);
+
         let ctxts_vars = elgamal_hybrid_encrypt(
             &mut cs, base, pk_var, pk_point, rand_var, &data_vars,
         );
@@ -829,10 +837,18 @@ pub(crate) mod tests {
         let witness = cs.get_and_clear_witness();
         assert_eq!(ctxts.e1.get_x(), witness[ctxts_vars.e1.get_x()]);
         assert_eq!(ctxts.e1.get_y(), witness[ctxts_vars.e1.get_y()]);
-        for (&ctxt, &ctxt_var) in
+        
+        /*for (&ctxt, &ctxt_var) in
             ctxts.symm_ctxts.iter().zip(ctxts_vars.symm_ctxts.iter())
         {
             assert_eq!(ctxt, witness[ctxt_var]);
+        }*/
+
+        for ((&ctxt, &ctxt_prime) , &ctxt_var) in
+            ctxts.symm_ctxts.iter().zip(ctxts_prime.symm_ctxts.iter()).zip(ctxts_vars.symm_ctxts.iter())
+        {
+            assert_eq!(ctxt, witness[ctxt_var]);
+            assert_ne!(ctxt_prime, witness[ctxt_var]);
         }
 
         // check the constraint system
@@ -866,6 +882,10 @@ pub(crate) mod tests {
 
     #[test]
     fn test_asset_mixing() {
+        // This is a case of negative test
+        // where the set of input asset_type is not the same as the output asset_type
+        // {0,2} != {2}
+        // of course the amounts are not equal
         // The error path
         let mut cs = TurboPlonkConstraintSystem::new();
         let zero = BLSScalar::zero();
@@ -902,6 +922,12 @@ pub(crate) mod tests {
         assert!(cs.verify_witness(&witness, &[]).is_err());
 
         // The happy path
+        // The set of asset_types are equal for inputs and outputs
+        // {0,1,2}
+        // Also the input and outputs amounts are balanced
+        // asset_type 0 -> 60 = 50 + 10
+        // asset_type 1 -> 10 = 9 + 1
+        // asset_type 2 -> 100 + 50 = 40 + 80 + 30
         let mut cs = TurboPlonkConstraintSystem::new();
         // asset_types = (0, 2, 1, 2)
         let in_types = [
@@ -953,6 +979,7 @@ pub(crate) mod tests {
         let witness = cs.get_and_clear_witness();
         assert!(cs.verify_witness(&witness, &[]).is_ok());
 
+        // This is for negative test
         // The circuit cannot be satisfied when the set of input asset types is different from the set of output asset types.
         let mut cs = TurboPlonkConstraintSystem::new();
         // asset_types = (1, 0, 1, 2)
@@ -995,6 +1022,9 @@ pub(crate) mod tests {
         let witness = cs.get_and_clear_witness();
         assert!(cs.verify_witness(&witness, &[]).is_err());
 
+        
+        // This is for negative test
+        // The circuit cannot be satisfied when the set of input asset types are equal but the amounts summation is different.
         let mut cs = TurboPlonkConstraintSystem::new();
         // asset_types = (1, 0, 1)
         let in_types = [
@@ -1013,7 +1043,7 @@ pub(crate) mod tests {
             .zip(in_amounts.iter())
             .map(|(&asset_type, &amount)| (asset_type, amount))
             .collect();
-        // asset_types = (0, 1, 2)
+        // asset_types = (1, 0, 1)
         let out_types = [
             cs.new_variable(zero),
             cs.new_variable(one),
@@ -1067,6 +1097,8 @@ pub(crate) mod tests {
 
         // Check the constraints
         assert!(cs.verify_witness(&witness, &pub_inputs).is_ok());
+        
+        //This for negative test
         pub_inputs[0].add_assign(&BLSScalar::one());
         assert!(cs.verify_witness(&witness, &pub_inputs).is_err());
     }
@@ -1075,11 +1107,16 @@ pub(crate) mod tests {
     fn test_commit() {
         let mut cs = TurboPlonkConstraintSystem::new();
         let amount = BLSScalar::from_u32(7);
+
+        let amount_prime = BLSScalar::from_u32(17);
+        
         let asset_type = BLSScalar::from_u32(5);
         let comm = HashCommitment::new();
         let mut prng = ChaChaRng::from_seed([0u8; 32]);
         let blind = BLSScalar::random(&mut prng);
         let commitment = comm.commit(&blind, &[amount, asset_type]).unwrap(); // safe unwrap
+
+        let commitment_prime = comm.commit(&blind, &[amount_prime, asset_type]).unwrap(); // safe unwrap
 
         let amount_var = cs.new_variable(amount);
         let asset_var = cs.new_variable(asset_type);
@@ -1090,8 +1127,13 @@ pub(crate) mod tests {
         // Check commitment consistency
         assert_eq!(witness[comm_var], commitment);
 
+        // Check commitment inconsistency
+        assert_ne!(witness[comm_var], commitment_prime);
+
         // Check the constraints
         assert!(cs.verify_witness(&witness, &[]).is_ok());
+        
+        //This for negative test
         witness[comm_var] = BLSScalar::zero();
         assert!(cs.verify_witness(&witness, &[]).is_err());
     }
@@ -1103,6 +1145,9 @@ pub(crate) mod tests {
         let mut cs = TurboPlonkConstraintSystem::new();
         let mut prng = ChaChaRng::from_seed([1u8; 32]);
         let sk = BLSScalar::random(&mut prng);
+        
+        let sk_prime = BLSScalar::random(&mut prng);
+        
         let bytes = vec![1u8; 32];
         let uid_amount = BLSScalar::from_bytes(&bytes[..]).unwrap(); // safe unwrap
         let asset_type = one;
@@ -1110,6 +1155,9 @@ pub(crate) mod tests {
         let prf = PRF::new();
         let expected_output =
             prf.eval(&sk, &[uid_amount, asset_type, *pk.get_x(), *pk.get_y()]);
+
+        let unexpected_output =
+            prf.eval(&sk_prime, &[uid_amount, asset_type, *pk.get_x(), *pk.get_y()]);
 
         let sk_var = cs.new_variable(sk);
         let uid_amount_var = cs.new_variable(uid_amount);
@@ -1127,8 +1175,13 @@ pub(crate) mod tests {
         // Check PRF output consistency
         assert_eq!(witness[nullifier_var], expected_output);
 
+        // Check PRF output inconsistency
+        assert_ne!(witness[nullifier_var], unexpected_output);
+
         // Check the constraints
         assert!(cs.verify_witness(&witness, &[]).is_ok());
+        
+        //This is for negative test
         witness[nullifier_var] = zero;
         assert!(cs.verify_witness(&witness, &[]).is_err());
     }
@@ -1167,8 +1220,19 @@ pub(crate) mod tests {
         // Check output correctness
         assert_eq!(output, expected_output);
 
+        //Compare the result with an unexpected output
+        let unexpected_output = vec![
+            witness[sib1_var],
+            witness[node_var],
+            witness[sib2_var],
+            witness[cs.zero_var()],
+        ];
+        assert_ne!(output, unexpected_output);
+
         // Check constraints
         assert!(cs.verify_witness(&witness, &[]).is_ok());
+        
+        //This is modified to get a negative test
         witness[sib1_var] = BLSScalar::one();
         assert!(cs.verify_witness(&witness, &[]).is_err());
     }
@@ -1229,6 +1293,8 @@ pub(crate) mod tests {
 
         // Check constraints
         assert!(cs.verify_witness(&witness, &[]).is_ok());
+        
+        //The witness root_var is modified to get a negative test
         witness[root_var] = one;
         assert!(cs.verify_witness(&witness, &[]).is_err());
     }
@@ -1238,6 +1304,7 @@ pub(crate) mod tests {
         let zero = BLSScalar::zero();
         let one = BLSScalar::one();
         // happy path: `is_left_child`/`is_right_child`/`is_left_child + is_right_child` are boolean
+        // happy path: `is_left_child`/`is_right_child`/`is_left_child XOR is_right_child` = 1 (True)
         let mut cs = TurboPlonkConstraintSystem::new();
         let node = MTNode {
             siblings1: one,
@@ -1250,6 +1317,7 @@ pub(crate) mod tests {
         let witness = cs.get_and_clear_witness();
         assert!(cs.verify_witness(&witness, &[]).is_ok());
 
+        //Neegative test
         // cs cannot be satisfied when `is_left_child` (or `is_right_child`) is not boolean
         let mut cs = TurboPlonkConstraintSystem::new();
         // is_left is not boolean
@@ -1264,7 +1332,9 @@ pub(crate) mod tests {
         let witness = cs.get_and_clear_witness();
         assert!(cs.verify_witness(&witness, &[]).is_err());
 
+        //Neegative test
         // cs cannot be satisfied when `is_left_child` + `is_right_child` is not boolean
+        // cs cannot be satisfied when `is_left_child` XOR `is_right_child` is not one
         let mut cs = TurboPlonkConstraintSystem::new();
         // `is_left` and `is_right` are both 1
         let node = MTNode {
@@ -1312,6 +1382,8 @@ pub(crate) mod tests {
         ];
         test_xfr_cs(inputs.to_vec(), outputs.to_vec(), true);
 
+        // The following lines have been written in order to get a negative test
+        // outputs has been modified just to get a dad witness
         // multi-assets xfr: bad witness
         outputs[0].0 = 18;
         test_xfr_cs(inputs, outputs, false);

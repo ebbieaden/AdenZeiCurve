@@ -121,9 +121,21 @@ mod test {
 
         let bytes = pub_key.zei_to_bytes();
         assert_ne!(bytes.len(), 0);
-
+        
         let reformed_pub_key = AXfrPubKey::zei_from_bytes(bytes.as_slice()).unwrap();
         assert_eq!(pub_key, reformed_pub_key);
+
+        
+        //Added for a negative test
+        
+        let mut bytes_2 = bytes.clone();
+        assert_ne!(bytes_2.len(), 0);
+
+        bytes_2[7] = 34;
+
+        let reformed_pub_key_2 = AXfrPubKey::zei_from_bytes(bytes_2.as_slice()).unwrap();
+        assert_ne!(pub_key, reformed_pub_key_2);
+
     }
 
     #[test]
@@ -136,5 +148,16 @@ mod test {
 
         let reformed_key_pair = AXfrKeyPair::zei_from_bytes(bytes.as_slice()).unwrap();
         assert_eq!(keypair, reformed_key_pair);
+
+        
+        //Added by me for a negative test
+        
+        let mut bytes_2 = bytes.clone();
+        assert_ne!(bytes_2.len(), 0);
+
+        bytes_2[7] = 34;
+        
+        let reformed_key_pair_2 = AXfrKeyPair::zei_from_bytes(bytes_2.as_slice()).unwrap();
+        assert_ne!(keypair, reformed_key_pair_2);
     }
 }
