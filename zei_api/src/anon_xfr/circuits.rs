@@ -886,11 +886,13 @@ pub(crate) mod tests {
         // where the set of input asset_type is not the same as the output asset_type
         // {0,2} != {2}
         // of course the amounts are not equal
+
         // The error path
         let mut cs = TurboPlonkConstraintSystem::new();
         let zero = BLSScalar::zero();
         let one = BLSScalar::one();
         let two = one.add(&one);
+
         // asset_types = (0, 2)
         let in_types = [cs.new_variable(zero), cs.new_variable(two)];
         // amoutns = (60, 100)

@@ -319,6 +319,7 @@ mod tests {
     #[test]
     fn test_anon_xfr() {
         let mut prng = ChaChaRng::from_seed([0u8; 32]);
+        let mut rng = ChaChaRng::from_entropy();
 
         let user_params =
             UserParams::from_file_if_exists(1, 1, Some(1), DEFAULT_BP_NUM_GENS, None)
@@ -328,7 +329,9 @@ mod tests {
         let one = BLSScalar::one();
         let two = one.add(&one);
 
-        let amount = 10u64;
+        //let amount = 10u64;
+        let amount = 1 + rng.next_u64() % 100;
+
         let asset_type = AssetType::from_identical_byte(0);
 
         // simulate input abar
@@ -434,6 +437,7 @@ mod tests {
         {
             // verifier scope
             let verifier_params = NodeParams::from(user_params);
+            assert!(verify_anon_xfr_body(&verifier_params, &body, &zero).is_err());
             assert!(verify_anon_xfr_body(&verifier_params, &body, &merkle_root).is_ok());
 
             let note = AXfrNote::generate_note_from_body(body, key_pairs).unwrap();

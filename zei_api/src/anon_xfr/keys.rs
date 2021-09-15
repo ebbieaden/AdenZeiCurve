@@ -150,7 +150,7 @@ mod test {
         assert_eq!(keypair, reformed_key_pair);
 
         
-        //Added by me for a negative test
+        //Added for a negative test
         
         let mut bytes_2 = bytes.clone();
         assert_ne!(bytes_2.len(), 0);

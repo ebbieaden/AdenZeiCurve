@@ -276,6 +276,7 @@ mod test {
     use crypto::basics::hybrid_encryption::{XPublicKey, XSecretKey};
     use rand_chacha::ChaChaRng;
     use rand_core::SeedableRng;
+    use rand::RngCore;
 
     // helper function
     fn build_bar(
@@ -296,6 +297,8 @@ mod test {
     #[test]
     fn test_bar_to_abar() {
         let mut prng = ChaChaRng::from_seed([0u8; 32]);
+        let mut rng = ChaChaRng::from_entropy();
+        let amount = 1 + rng.next_u64() % 100;
         let pc_gens = RistrettoPedersenGens::default();
         let bar_keypair = XfrKeyPair::generate(&mut prng);
         let abar_keypair = AXfrKeyPair::generate(&mut prng);
@@ -308,7 +311,7 @@ mod test {
             &bar_keypair.pub_key,
             &mut prng,
             &pc_gens,
-            10u64,
+            amount,
             AssetType::from_identical_byte(1u8),
             AssetRecordType::ConfidentialAmount_ConfidentialAssetType,
         );
@@ -365,12 +368,13 @@ mod test {
     #[test]
     fn test_bar_to_abar_xfr_note() {
         let mut prng = ChaChaRng::from_seed([0u8; 32]);
+        let mut rng = ChaChaRng::from_entropy();
         let bar_keypair = XfrKeyPair::generate(&mut prng);
         let abar_keypair = AXfrKeyPair::generate(&mut prng);
         let dec_key = XSecretKey::new(&mut prng);
         let enc_key = XPublicKey::from(&dec_key);
         let pc_gens = RistrettoPedersenGens::default();
-        let amount = 10;
+        let amount = 1 + rng.next_u64() % 100;
         let asset_type = AssetType::from_identical_byte(1u8);
         let (bar, memo) = build_bar(
             &bar_keypair.pub_key,
