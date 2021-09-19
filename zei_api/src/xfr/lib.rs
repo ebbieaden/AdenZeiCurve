@@ -3,10 +3,7 @@ use crate::setup::PublicParams;
 use crate::xfr::asset_mixer::{
     batch_verify_asset_mixing, prove_asset_mixing, AssetMixProof, AssetMixingInstance,
 };
-use crate::xfr::proofs::{
-    asset_amount_tracing_proofs, asset_proof, batch_verify_confidential_amount,
-    batch_verify_confidential_asset, batch_verify_tracer_tracing_proof, range_proof,
-};
+use crate::xfr::proofs::{asset_amount_tracing_proofs, asset_proof, batch_verify_confidential_amount, batch_verify_confidential_amount_ref, batch_verify_confidential_asset, batch_verify_confidential_asset_ref, batch_verify_tracer_tracing_proof, range_proof};
 use crate::xfr::sig::{XfrKeyPair, XfrMultiSig, XfrPublicKey};
 use crate::xfr::structs::*;
 use algebra::groups::{GroupArithmetic, Scalar as _, ScalarArithmetic};
@@ -513,6 +510,56 @@ pub fn batch_verify_xfr_notes<R: CryptoRng + RngCore>(
 
     let bodies = notes.iter().map(|note| &note.body).collect_vec();
     batch_verify_xfr_bodies(prng, params, &bodies, policies).c(d!())
+}
+
+pub fn verify_bare_transaction<R: CryptoRng + RngCore>(
+    prng: &mut R,
+    params: &mut PublicParams,
+    inputs: &[BlindAssetRecord],
+    outputs: &[BlindAssetRecord],
+    proofs: &AssetTypeAndAmountProof,
+) -> Result<()> {
+    let mut conf_amount_records = vec![];
+    let mut conf_asset_type_records = vec![];
+    let mut conf_asset_mix_bodies = vec![];
+
+    match proofs {
+        AssetTypeAndAmountProof::ConfAll(x) => {
+            let range_proof = &(*x).0;
+            let asset_proof = &(*x).1;
+            conf_amount_records.push((inputs, outputs, range_proof));
+            conf_asset_type_records.push((inputs, outputs, asset_proof));
+            // save for batching
+        }
+        AssetTypeAndAmountProof::ConfAmount(range_proof) => {
+            conf_amount_records.push((inputs, outputs, range_proof)); // save for batching
+            verify_plain_asset(inputs, outputs).c(d!())?; // no batching
+        }
+        AssetTypeAndAmountProof::ConfAsset(asset_proof) => {
+            verify_plain_amounts(inputs, outputs).c(d!())?; // no batching
+            conf_asset_type_records.push((inputs, outputs, asset_proof));
+            // save for batch proof
+        }
+        AssetTypeAndAmountProof::NoProof => {
+            verify_plain_asset_mix(inputs, outputs).c(d!())?;
+            // no batching
+        }
+        AssetTypeAndAmountProof::AssetMix(asset_mix_proof) => {
+            conf_asset_mix_bodies.push((inputs, outputs, asset_mix_proof));
+            // save for batch proof
+        }
+    }
+
+    // 1. verify confidential amounts
+    batch_verify_confidential_amount_ref(prng, params, conf_amount_records.as_slice())
+        .c(d!())?;
+
+    // 2. verify confidential asset_types
+    batch_verify_confidential_asset_ref(prng, &params.pc_gens, conf_asset_type_records.as_slice())
+        .c(d!())?;
+
+    // 3. verify confidential asset mix proofs
+    batch_verify_asset_mix(prng, params, conf_asset_mix_bodies.as_slice()).c(d!())
 }
 
 pub(crate) fn batch_verify_xfr_body_asset_records<R: CryptoRng + RngCore>(

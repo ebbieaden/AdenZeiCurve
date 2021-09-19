@@ -585,6 +585,31 @@ fn add_blindings(oar: &[&OpenAssetRecord]) -> (Scalar, Scalar) {
     )
 }
 
+pub(crate) fn batch_verify_confidential_amount_ref<R: CryptoRng + RngCore>(
+    prng: &mut R,
+    params: &PublicParams,
+    instances: &[(&[BlindAssetRecord], &[BlindAssetRecord], &XfrRangeProof)],
+) -> Result<()> {
+    let mut transcripts = vec![Transcript::new(b"Zei Range Proof"); instances.len()];
+    let proofs: Vec<&RangeProof> =
+        instances.iter().map(|(_, _, pf)| &pf.range_proof).collect();
+    let mut commitments = vec![];
+    for (input, output, proof) in instances {
+        commitments.push(extract_value_commitments(input, output, proof).c(d!())?);
+    }
+    let value_commitments = commitments.iter().map(|c| c.as_slice()).collect_vec();
+    batch_verify_ranges(
+        prng,
+        &params.bp_gens,
+        &params.pc_gens,
+        proofs.as_slice(),
+        &mut transcripts,
+        &value_commitments,
+        BULLET_PROOF_RANGE,
+    )
+    .c(d!(ZeiError::XfrVerifyConfidentialAmountError))
+}
+
 pub(crate) fn batch_verify_confidential_amount<R: CryptoRng + RngCore>(
     prng: &mut R,
     params: &PublicParams,
@@ -744,6 +769,41 @@ pub(crate) fn asset_proof<R: CryptoRng + RngCore>(
         asset_blinds.as_slice(),
     )
     .c(d!())
+}
+
+pub(crate) fn batch_verify_confidential_asset_ref<R: CryptoRng + RngCore>(
+    prng: &mut R,
+    pc_gens: &RistrettoPedersenGens,
+    instances: &[(
+        &[BlindAssetRecord],
+        &[BlindAssetRecord],
+        &ChaumPedersenProofX,
+    )],
+) -> Result<()> {
+    let mut transcript = Transcript::new(b"AssetEquality");
+    let mut proof_instances = Vec::with_capacity(instances.len());
+    for (inputs, outputs, proof) in instances {
+        let instance_commitments: Result<Vec<RistrettoPoint>> = inputs
+            .iter()
+            .chain(outputs.iter())
+            .map(|x| match x.asset_type {
+                XfrAssetType::Confidential(com) => {
+                    com.decompress().c(d!(ZeiError::ParameterError))
+                }
+                XfrAssetType::NonConfidential(asset_type) => {
+                    Ok(pc_gens.commit(asset_type.as_scalar(), Scalar::from_u32(0)))
+                }
+            })
+            .collect();
+        proof_instances.push((instance_commitments.c(d!())?, *proof));
+    }
+    chaum_pedersen_batch_verify_multiple_eq(
+        &mut transcript,
+        prng,
+        &pc_gens,
+        &proof_instances,
+    )
+    .c(d!(ZeiError::XfrVerifyConfidentialAssetError))
 }
 
 pub(crate) fn batch_verify_confidential_asset<R: CryptoRng + RngCore>(
