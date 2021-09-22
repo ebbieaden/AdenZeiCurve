@@ -17,9 +17,9 @@ pub const XFR_SECRET_KEY_LENGTH: usize = ed25519_dalek::SECRET_KEY_LENGTH;
 
 #[wasm_bindgen]
 #[derive(Clone, Copy, Debug, Default)]
-pub struct XfrPublicKey(pub(crate) PublicKey);
+pub struct XfrPublicKey(pub PublicKey);
 #[derive(Debug)]
-pub struct XfrSecretKey(pub(crate) SecretKey);
+pub struct XfrSecretKey(pub SecretKey);
 #[wasm_bindgen]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct XfrKeyPair {
