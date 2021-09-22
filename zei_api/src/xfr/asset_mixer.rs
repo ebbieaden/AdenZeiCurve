@@ -15,6 +15,12 @@ use wasm_bindgen::__rt::std::collections::HashSet;
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AssetMixProof(#[serde(with = "zei_obj_serde")] pub(crate) R1CSProof);
 
+impl From<bulletproofs::r1cs::R1CSProof> for AssetMixProof {
+    fn from(i: bulletproofs::r1cs::R1CSProof) -> Self {
+        AssetMixProof(i)
+    }
+}
+
 impl PartialEq for AssetMixProof {
     fn eq(&self, other: &AssetMixProof) -> bool {
         self.0.to_bytes() == other.0.to_bytes()
