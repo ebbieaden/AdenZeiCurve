@@ -26,3 +26,4 @@ pub mod xfr;
 pub use utils::errors;
 
 pub use algebra::ristretto;
+pub use crypto::chaum_pedersen;

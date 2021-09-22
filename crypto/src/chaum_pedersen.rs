@@ -14,18 +14,18 @@ use utils::errors::ZeiError;
 #[derive(Clone, Serialize, Deserialize, Debug, Eq, PartialEq, Default)]
 pub struct ChaumPedersenProof {
     /// A Chaum-Perdersen equality of commitment proof
-    pub(crate) c3: RistrettoPoint,
-    pub(crate) c4: RistrettoPoint,
-    pub(crate) z1: Scalar,
-    pub(crate) z2: Scalar,
-    pub(crate) z3: Scalar,
+    pub c3: RistrettoPoint,
+    pub c4: RistrettoPoint,
+    pub z1: Scalar,
+    pub z2: Scalar,
+    pub z3: Scalar,
 }
 
 /// A Chaum-Perdersen equality of multiple commitments proof
 #[derive(Clone, Serialize, Deserialize, Debug, Eq, PartialEq, Default)]
 pub struct ChaumPedersenProofX {
-    pub(crate) c1_eq_c2: ChaumPedersenProof,
-    pub(crate) zero: Option<ChaumPedersenProof>,
+    pub c1_eq_c2: ChaumPedersenProof,
+    pub zero: Option<ChaumPedersenProof>,
 }
 
 fn init_chaum_pedersen_multiple(
