@@ -17,9 +17,9 @@ pub const XFR_SECRET_KEY_LENGTH: usize = ed25519_dalek::SECRET_KEY_LENGTH;
 
 #[wasm_bindgen]
 #[derive(Clone, Copy, Debug, Default)]
-pub struct XfrPublicKey(pub PublicKey);
+pub struct XfrPublicKey(pub(crate) PublicKey);
 #[derive(Debug)]
-pub struct XfrSecretKey(pub SecretKey);
+pub struct XfrSecretKey(pub(crate) SecretKey);
 #[wasm_bindgen]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct XfrKeyPair {
@@ -53,6 +53,12 @@ impl PartialOrd for XfrPublicKey {
 impl Hash for XfrPublicKey {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.as_bytes().hash(state)
+    }
+}
+
+impl From<ed25519_dalek::PublicKey> for XfrPublicKey {
+    fn from(p: ed25519_dalek::PublicKey) -> Self {
+        XfrPublicKey(p)
     }
 }
 
