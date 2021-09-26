@@ -22,8 +22,8 @@ impl From<bulletproofs::r1cs::R1CSProof> for AssetMixProof {
 }
 
 impl AssetMixProof {
-    pub fn into_r1cs(self) -> R1CSProof {
-        self.0
+    pub fn into_r1cs(&self) -> &R1CSProof {
+        &self.0
     }
 }
 
