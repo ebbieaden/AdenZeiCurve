@@ -21,6 +21,12 @@ impl From<bulletproofs::r1cs::R1CSProof> for AssetMixProof {
     }
 }
 
+impl Into<bulletproofs::r1cs::R1CSProof> for AssetMixProof {
+    fn into(self) -> R1CSProof {
+        self.0
+    }
+}
+
 impl PartialEq for AssetMixProof {
     fn eq(&self, other: &AssetMixProof) -> bool {
         self.0.to_bytes() == other.0.to_bytes()
