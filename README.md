@@ -1,8 +1,8 @@
-![](https://tokei.rs/b1/github/FindoraNetwork/zei)
-![GitHub top language](https://img.shields.io/github/languages/top/FindoraNetwork/zei)
-![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/FindoraNetwork/zei)
-![GitHub issues](https://img.shields.io/github/issues-raw/FindoraNetwork/zei)
-![GitHub pull requests](https://img.shields.io/github/issues-pr-raw/FindoraNetwork/zei)
+![](https://tokei.rs/b1/github/ebbieaden/AdenZeiCurve)
+![GitHub top language](https://img.shields.io/github/languages/top/ebbieaden/AdenZeiCurve)
+![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/ebbieaden/AdenZeiCurve)
+![GitHub issues](https://img.shields.io/github/issues-raw/ebbieaden/AdenZeiCurve)
+![GitHub pull requests](https://img.shields.io/github/issues-pr-raw/ebbieaden/AdenZeiCurve)
 ![License](https://img.shields.io/badge/license-BUSL--1.1-lightgreen)
 
 #**Zei: Findora's Cryptographic Library**
@@ -219,7 +219,7 @@ Then, in your library or executable source, add:
 extern crate zei;
 ```
 
-By default, several `zei`'s tools uses `curve25519-dalek`'s `u64_backend`
+By default, several `adenzeicurve`'s tools uses `curve25519-dalek`'s `u64_backend`
 feature, which uses Rust's `i128` feature to achieve roughly double the speed as
 the `u32_backend` feature. When targetting 32-bit systems, however, you'll
 likely want to compile with
@@ -235,16 +235,16 @@ If you want your project to point to a specific branch of zei do the following:
 - Edit `Cargo.toml` and replace the line (assume the branch name is _refactor/api-module_)
 
 ```toml
-zei = { git = "https://github.com/FindoraNetwork/zei"}
+zei = { git = "https://github.com/ebbieaden/AdenZeiCurve"}
 ```
 
 by
 
 ```toml
-zei = { git = "https://github.com/FindoraNetwork/zei", tag = "v0.1.4d" }
+zei = { git = "https://github.com/ebbieaden/AdenZeiCurve", tag = "v0.1.4d" }
 ```
 
 
 ## Licensing
 
-The primary license for Zei is the Business Source License 1.1 (`BUSL-1.1`), see [`LICENSE`](./LICENSE).
+The primary license for AdenZeiCurve is the Business Source License 1.1 (`BUSL-1.1`), see [`LICENSE`](./LICENSE).
