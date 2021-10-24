@@ -5,7 +5,7 @@
 ![GitHub pull requests](https://img.shields.io/github/issues-pr-raw/ebbieaden/AdenZeiCurve)
 ![License](https://img.shields.io/badge/license-BUSL--1.1-lightgreen)
 
-#**Zei: Findora's Cryptographic Library**
+#**AdenZeiCurve: Findora's Cryptographic Library**
 
 Zei is a library that provide tools to create and verify public transaction
 with confidential data.
